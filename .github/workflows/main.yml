@@ -47,4 +47,4 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tag: ${{ secrets.DOCKER_HUB_USERNAME}}/docker-java-jar:today
+          tag: datuits/docker-java-jar:latest

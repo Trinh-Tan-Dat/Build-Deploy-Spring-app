@@ -48,3 +48,6 @@ jobs:
           file: Dockerfile
           push: true
           tag: datuits/docker-java-jar:latest
+
+      - name: Debug Tag
+        run: echo "Tag: ${{ secrets.DOCKER_HUB_USERNAME}}/docker-java-jar:today"

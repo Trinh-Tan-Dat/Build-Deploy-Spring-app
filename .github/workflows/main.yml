@@ -33,7 +33,7 @@ jobs:
           context: .
           file: Dockerfile
           push: false
-          tag: ${{ secrets.datuits}}/spring-boot-for-beginners:$latest
+          tag: ${{ secrets.datuits}}/spring-boot:$latest
 
       - name: Login to Docker Hub
         uses: docker/login-action@v1
@@ -47,4 +47,4 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tag: ${{ secrets.datuits}}/spring-boot-for-beginners:$latest
+          tag: ${{ secrets.datuits}}/spring-boot:$latest

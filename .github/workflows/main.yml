@@ -15,10 +15,10 @@ jobs:
 
       - name: Run tests
         run: |
-          cd ./.github/workflows
-          ./test.yml
+          chmod +x ./.github/workflows/test.yml
+          ./.github/workflows/test.yml
 
       - name: Build application
         run: |
-          cd ./.github/workflows
-          ./build.yml
+          chmod +x ./.github/workflows/build.yml
+          ./.github/workflows/build.yml

@@ -1,0 +1,5 @@
+name: Spring Boot Test
+on:
+  push:
+    branches:
+      - main

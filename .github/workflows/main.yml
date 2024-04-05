@@ -1,134 +1,45 @@
-# name: Build & Deploy app
-
-# on:
-#   push:
-#     branches:
-#       - main
-
-# jobs:
-#   build-deploy:
-#     name: Build & Deploy Spring app
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v3
-
-#       - name: Set up JDK 17
-#         uses: actions/setup-java@v2
-#         with:
-#           distribution: 'adopt'
-#           java-version: 17
-
-#       - name: Uni Tests
-#         run: mvn -B test --file pom.xml
-
-#       - name: Build the application
-#         run: |
-#           mvn clean
-#           mvn -B package --file pom.xml 
-
-#       - name: Build Docker image
-#         uses: docker/build-push-action@v2
-#         with:
-#           context: .
-#           file: Dockerfile
-#           push: false
-#           tag: ${{ secrets.DOCKER_HUB_USERNAME}}/docker-java-jar:latest
-
-#       - name: Login to Docker Hub
-#         uses: docker/login-action@v1
-#         with:
-#           username: ${{ secrets.DOCKER_HUB_USERNAME }}
-#           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-
-#       - name: Push to Docker Hub
-#         uses: docker/build-push-action@v2
-#         with:
-#           context: .
-#           file: Dockerfile
-#           push: true
-#           tag: ${{ secrets.DOCKER_HUB_USERNAME }}/docker-java-jar:latest
-
-
-
-
-
-
-
-
-
-name: Build & Deploy Spring app
-
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+name: AWS ECR push
 
 jobs:
-  build-deploy:
-    name: Build and Deploy Spring boot for beginner
+  deploy:
+    name: Deploy
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Install Octopus CLI
+      uses: OctopusDeploy/install-octopus-cli-action@v1.1.1
+      with:
+          version: latest
+    - name: Checkout
+      uses: actions/checkout@v2
 
-      - name: Setup JDK 17
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'corretto'
-          java-version: 17
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-2
 
-      - name: Unit Tests
-        run: mvn -B test --file pom.xml
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build the application
-        run: |
-          mvn clean
-          mvn -B package --file pom.xml
-          
-      - name: Build Docker Image
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          dockerfile: Dockerfile
-          push: false
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/docker-java-jar:today
-      - name: Login to Docker Hub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+    - name: Build, tag, and push the image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: ${{ secrets.REPO_NAME }}
+        IMAGE_TAG: "latest"
 
-      - name: Push to Docker Hub
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          dockerfile: Dockerfile
-          push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/docker-java-jar:today
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-2
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Build, tag, and push the image to Amazon ECR
-        id: build-image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.REPO_NAME }}
-          IMAGE_TAG: "latest"
-
-        run: |
-          # Build a docker container and push it to ECR 
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          echo "Pushing image to ECR..."
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-            
+      run: |
+        # Build a docker container and push it to ECR 
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        echo "Pushing image to ECR..."
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
